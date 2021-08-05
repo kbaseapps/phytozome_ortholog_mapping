@@ -93,7 +93,7 @@ class phytozome_ortholog_mapping:
         ortholog_set = {'elements' : {}}
 
         for ortholog in found_orthologs:
-            ortholog_set[ortholog]=["Phytozome_Genomes/Athaliana_TAIR10"]
+            ortholog_set['elements'][ortholog]=["Phytozome_Genomes/Athaliana_TAIR10"]
 
         print("Found: ",len(found_orthologs))
 
