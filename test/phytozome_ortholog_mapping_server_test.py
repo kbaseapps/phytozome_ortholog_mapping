@@ -2,6 +2,7 @@
 import os
 import time
 import unittest
+import shutil
 from configparser import ConfigParser
 
 from phytozome_ortholog_mapping.phytozome_ortholog_mappingImpl import phytozome_ortholog_mapping
@@ -9,7 +10,7 @@ from phytozome_ortholog_mapping.phytozome_ortholog_mappingServer import MethodCo
 from phytozome_ortholog_mapping.authclient import KBaseAuth as _KBaseAuth
 
 from installed_clients.WorkspaceClient import Workspace
-
+from installed_clients.GenomeFileUtilClient import GenomeFileUtil
 
 class phytozome_ortholog_mappingTest(unittest.TestCase):
 
@@ -43,8 +44,21 @@ class phytozome_ortholog_mappingTest(unittest.TestCase):
         cls.scratch = cls.cfg['scratch']
         cls.callback_url = os.environ['SDK_CALLBACK_URL']
         suffix = int(time.time() * 1000)
-        cls.wsName = "test_ContigFilter_" + str(suffix)
+        cls.wsName = "test_phytozome_ortholog_mapping_" + str(suffix)
         ret = cls.wsClient.create_workspace({'workspace': cls.wsName})  # noqa
+        cls.gfu = GenomeFileUtil(cls.callback_url)
+        cls.genome = "Test_Genome"
+        cls.prepare_data()
+
+    @classmethod
+    def prepare_data(cls):
+        cls.gff_filename = 'Test_v1.0.gene.gff3.gz'
+        cls.gff_path = os.path.join(cls.scratch, cls.gff_filename)
+        shutil.copy(os.path.join("/kb", "module", "data", cls.gff_filename), cls.gff_path)
+
+        cls.fa_filename = 'Test_v1.0.fa.gz'
+        cls.fa_path = os.path.join(cls.scratch, cls.fa_filename)
+        shutil.copy(os.path.join("/kb", "module", "data", cls.fa_filename), cls.fa_path)
 
     @classmethod
     def tearDownClass(cls):
@@ -52,16 +66,34 @@ class phytozome_ortholog_mappingTest(unittest.TestCase):
             cls.wsClient.delete_workspace({'workspace': cls.wsName})
             print('Test workspace was deleted')
 
+    def loadFakeGenome(cls):
+        
+        input_params = {
+            'fasta_file': {'path': cls.fa_path},
+            'gff_file': {'path': cls.gff_path},
+            'genome_name': cls.genome,
+            'workspace_name': cls.wsName,
+            'source': 'Phytozome',
+            'type': 'Reference',
+            'scientific_name': 'Populus trichocarpa'
+        }
+
+        result = cls.gfu.fasta_gff_to_genome(input_params)
+
     # NOTE: According to Python unittest naming rules test method names should start from 'test'. # noqa
     def test_your_method(self):
         # Prepare test objects in workspace if needed using
         # self.getWsClient().save_objects({'workspace': self.getWsName(),
         #                                  'objects': []})
+
+        self.loadFakeGenome()
+
         #
         # Run your method by
         # ret = self.getImpl().your_method(self.getContext(), parameters...)
         #
         # Check returned data with
         # self.assertEqual(ret[...], ...) or other unittest methods
-        ret = self.serviceImpl.run_phytozome_ortholog_mapping(self.ctx, {'workspace_name': self.wsName,
-                                                             'parameter_1': 'Hello World!'})
+        ret = self.serviceImpl.map_phytozome_orthologs(self.ctx, {'input_ws': self.wsName,
+                                                                  'input_genome': self.genome,
+                                                                  'ortholog_feature_set': 'orthologous_features'})
