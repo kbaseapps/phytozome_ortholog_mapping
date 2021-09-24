@@ -12,6 +12,7 @@ module phytozome_ortholog_mapping {
 	float threshold;
 	string input_ws;
 	string input_genome;
+	string input_feature_set;
 	string ortholog_feature_set;
     } MapPhytozomeOrthologsParams;
 
