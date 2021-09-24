@@ -28,7 +28,7 @@ class phytozome_ortholog_mapping:
     ######################################### noqa
     VERSION = "0.0.1"
     GIT_URL = "git@github.com:kbaseapps/phytozome_ortholog_mapping.git"
-    GIT_COMMIT_HASH = "207b4ef39c07bd8845bdb5aad483eed9703f829f"
+    GIT_COMMIT_HASH = "6c0541a681990d19754c9eaec70777afcf0ac348"
 
     #BEGIN_CLASS_HEADER
 
@@ -57,9 +57,8 @@ class phytozome_ortholog_mapping:
         This example function accepts any number of parameters and returns results in a KBaseReport
         :param params: instance of type "MapPhytozomeOrthologsParams" ->
            structure: parameter "threshold" of Double, parameter "input_ws"
-           of String, parameter "input_genome" of String, parameter
-           "input_feature_set" of String, parameter "ortholog_feature_set" of
-           String
+           of String, parameter "input_features" of String, parameter
+           "ortholog_feature_set" of String
         :returns: instance of type "ReportResults" -> structure: parameter
            "report_name" of String, parameter "report_ref" of String
         """
@@ -82,26 +81,24 @@ class phytozome_ortholog_mapping:
                         ortholog_map[feature][ortholog]=species_ortholog_map[spp][feature][ortholog]
 
         # Input can be either genome or feature set
-        # but not both
-        if('input_genome' in params):
-            self.log("Fetching plant genome: "+params['input_ws']+'/'+params['input_genome'])
-            plant_genome = self.dfu.get_objects({'object_refs': [params['input_ws']+'/'+params['input_genome']]})['data'][0]
-            print("Query Features: ",str(len(plant_genome['data']['mrnas'])))
+        self.log("Fetching Features: "+params['input_ws']+'/'+params['input_features'])
+        feature_object = self.dfu.get_objects({'object_refs': [params['input_ws']+'/'+params['input_features']]})['data'][0]
+        object_type = feature_object['info'][2]
 
-            found_orthologs = list()
-            for mrna in plant_genome['data']['mrnas']:
+        found_orthologs = list()
+        if("KBaseGenomes.Genome" in object_type):
+            print("Query Features in "+object_type+": ",str(len(feature_object['data']['mrnas'])))
+
+            for mrna in feature_object['data']['mrnas']:
                 if(mrna['id'] in ortholog_map):
                     for ortholog in ortholog_map[mrna['id']].keys():
                         if(ortholog not in found_orthologs):
                             found_orthologs.append(ortholog)
 
-        elif('input_feature_set' in params):
-            self.log("Fetching plant feature set: "+params['input_ws']+'/'+params['input_feature_set'])
-            plant_feature_set = self.dfu.get_objects({'object_refs': [params['input_ws']+'/'+params['input_feature_set']]})['data'][0]
-            print("Query Features: ",str(len(plant_feature_set['data']['elements'])))
+        elif("KBaseCollections.FeatureSet" in object_type):
+            print("Query Features in "+object_type+": ",str(len(feature_object['data']['elements'])))
 
-            found_orthologs = list()
-            for mrna in plant_feature_set['data']['elements']:
+            for mrna in feature_object['data']['elements']:
                 if(mrna in ortholog_map):
                     for ortholog in ortholog_map[mrna].keys():
                         if(ortholog not in found_orthologs):
@@ -118,10 +115,8 @@ class phytozome_ortholog_mapping:
         save_result = self.dfu.save_objects({'id':wsid,'objects':[{'name':params['ortholog_feature_set'],
                                                                    'data':ortholog_set,
                                                                    'type':'KBaseCollections.FeatureSet'}]})[0]
-
-        print(save_result)
         
-        #reference of saved featureset
+        # reference of saved featureset
         saved_featureset = "{}/{}/{}".format(save_result[6],save_result[0],save_result[4])
         
         html_string="<html><head><title>KBase Phytozome Ortholog Mapping Report</title></head><body>"

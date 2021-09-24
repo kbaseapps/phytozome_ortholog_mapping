@@ -98,12 +98,6 @@ class phytozome_ortholog_mappingTest(unittest.TestCase):
                                                                   'data':feature_set_dict,
                                                                   'type':'KBaseCollections.FeatureSet'}]})[0]
 
-        ws="seaver:narrative_1628187323546"
-        wsid = cls.dfu.ws_name_to_id(ws)
-        save_result = cls.dfu.save_objects({'id':wsid,'objects':[{'name':cls.feature_set,
-                                                                  'data':feature_set_dict,
-                                                                  'type':'KBaseCollections.FeatureSet'}]})[0]
-
     # NOTE: According to Python unittest naming rules test method names should start from 'test'. # noqa
     def test_map_phytozome_orthologs_from_genome(self):
         # Prepare test objects in workspace if needed using
@@ -119,7 +113,7 @@ class phytozome_ortholog_mappingTest(unittest.TestCase):
         # Check returned data with
         # self.assertEqual(ret[...], ...) or other unittest methods
         ret = self.serviceImpl.map_phytozome_orthologs(self.ctx, {'input_ws': self.wsName,
-                                                                  'input_genome': self.genome,
+                                                                  'input_features': self.genome,
                                                                   'ortholog_feature_set': 'orthologous_from_genome'})
 
     def test_map_phytozome_orthologs_from_feature_set(self):
@@ -136,6 +130,6 @@ class phytozome_ortholog_mappingTest(unittest.TestCase):
         # Check returned data with
         # self.assertEqual(ret[...], ...) or other unittest methods
         ret = self.serviceImpl.map_phytozome_orthologs(self.ctx, {'input_ws': self.wsName,
-                                                                  'input_feature_set': self.feature_set,
+                                                                  'input_features': self.feature_set,
                                                                   'ortholog_feature_set': 'orthologous_from_feature_set'})
 
