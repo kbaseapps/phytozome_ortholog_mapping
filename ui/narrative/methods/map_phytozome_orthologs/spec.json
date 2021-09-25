@@ -46,8 +46,8 @@
                     "target_property": "input_ws"
                 },
                 {
-                    "input_parameter": "input_genome",
-                    "target_property": "input_genome"
+                    "input_parameter": "input_features",
+                    "target_property": "input_features"
                 },
                 {
                     "input_parameter": "ortholog_feature_set",
