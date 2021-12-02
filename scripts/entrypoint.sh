@@ -19,7 +19,7 @@ elif [ "${1}" = "init" ] ; then
   echo "Initialize module"
   cd /data
   ORTHOLOG_FILE="Phytozome_Ortholog_Mapping.tar.gz"
-  wget http://bioseed.mcs.anl.gov/~seaver/Files/${ORTHOLOG_FILE}
+  wget https://web.cels.anl.gov/~seaver/KBase_App_Files/${ORTHOLOG_FILE}
   tar -zxf $ORTHOLOG_FILE
   if [ -f "Phytozome_Ortholog_Mapping.json" ] ; then
       touch __READY__
