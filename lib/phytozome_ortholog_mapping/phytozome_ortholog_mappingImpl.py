@@ -98,11 +98,31 @@ class phytozome_ortholog_mapping:
         elif("KBaseCollections.FeatureSet" in object_type):
             print("Query Features in "+object_type+": ",str(len(feature_object['data']['elements'])))
 
-            for mrna in feature_object['data']['elements']:
-                if(mrna in ortholog_map):
-                    for ortholog in ortholog_map[mrna].keys():
+            genome_obj_dict = dict()
+            for query_ftr in feature_object['data']['elements']:
+                if(query_ftr in ortholog_map):
+                    for ortholog in ortholog_map[query_ftr].keys():
                         if(ortholog not in found_orthologs):
                             found_orthologs.append(ortholog)
+                else:
+                    # each element in a FeatureSet should hold the workspace reference for its source genome
+                    genome_ref = feature_object['data']['elements'][ftr][0]
+                    genome_obj = dict()
+                    if(genome_ref not in genome_obj_dict):
+                        genome_obj = self.dfu.get_objects({'object_refs': [ genome_ref ]})['data'][0]
+                        genome_obj_dict[genome_ref]=genome_obj
+                    else:
+                        genome_obj = genome_obj_dict[genome_ref]
+
+                    # iterate through features until you get a hit
+                    # then find the mapping through the child mrna
+                    for genome_ftr in genome_obj['data']['features']:
+                        if(genome_ftr['id'] == query_ftr):
+                            for genome_mrna in genome_ftr['mrnas']:
+                                if(genome_mrna in ortholog_map):
+                                    for ortholog in ortholog_map[genome_mrna].keys():
+                                        if(ortholog not in found_orthologs):
+                                            found_orthologs.append(ortholog)
 
         ortholog_set = {'elements' : {}}
 
