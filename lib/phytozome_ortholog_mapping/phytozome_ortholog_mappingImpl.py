@@ -106,7 +106,7 @@ class phytozome_ortholog_mapping:
                             found_orthologs.append(ortholog)
                 else:
                     # each element in a FeatureSet should hold the workspace reference for its source genome
-                    genome_ref = feature_object['data']['elements'][ftr][0]
+                    genome_ref = feature_object['data']['elements'][query_ftr][0]
                     genome_obj = dict()
                     if(genome_ref not in genome_obj_dict):
                         genome_obj = self.dfu.get_objects({'object_refs': [ genome_ref ]})['data'][0]
