@@ -8,6 +8,8 @@ import uuid
 
 from installed_clients.KBaseReportClient import KBaseReport
 from installed_clients.DataFileUtilClient import DataFileUtil
+
+from phytozome_ortholog_mapping.core.generate_table import GenerateTable
 #END_HEADER
 
 
@@ -86,6 +88,7 @@ class phytozome_ortholog_mapping:
         object_type = feature_object['info'][2]
 
         found_orthologs = list()
+        ortholog_table_dict = dict()
         if("KBaseGenomes.Genome" in object_type):
             print("Query Features in "+object_type+": ",str(len(feature_object['data']['mrnas'])))
 
@@ -94,6 +97,10 @@ class phytozome_ortholog_mapping:
                     for ortholog in ortholog_map[mrna['id']].keys():
                         if(ortholog not in found_orthologs):
                             found_orthologs.append(ortholog)
+                        if(mrna['id'] not in ortholog_table_dict):
+                            ortholog_table_dict[mrna['id']]=dict()
+                        if(ortholog not in ortholog_table_dict[mrna['id']]):
+                            ortholog_table_dict[mrna['id']][ortholog]=ortholog_map[mrna['id']][ortholog]
 
         elif("KBaseCollections.FeatureSet" in object_type):
             print("Query Features in "+object_type+": ",str(len(feature_object['data']['elements'])))
@@ -104,6 +111,10 @@ class phytozome_ortholog_mapping:
                     for ortholog in ortholog_map[query_ftr].keys():
                         if(ortholog not in found_orthologs):
                             found_orthologs.append(ortholog)
+                        if(query_ftr not in ortholog_table_dict):
+                            ortholog_table_dict[query_ftr]=dict()
+                        if(ortholog not in ortholog_table_dict[query_ftr]):
+                            ortholog_table_dict[query_ftr][ortholog]=ortholog_map[query_ftr][ortholog]
                 else:
                     # each element in a FeatureSet should hold the workspace reference for its source genome
                     genome_ref = feature_object['data']['elements'][query_ftr][0]
@@ -123,6 +134,10 @@ class phytozome_ortholog_mapping:
                                     for ortholog in ortholog_map[genome_mrna].keys():
                                         if(ortholog not in found_orthologs):
                                             found_orthologs.append(ortholog)
+                                        if(query_ftr not in ortholog_table_dict):
+                                            ortholog_table_dict[query_ftr]=dict()
+                                        if(ortholog not in ortholog_table_dict[query_ftr]):
+                                            ortholog_table_dict[query_ftr][ortholog]=ortholog_map[query_ftr][ortholog]
 
         ortholog_set = {'elements' : {}}
 
@@ -135,20 +150,48 @@ class phytozome_ortholog_mapping:
         save_result = self.dfu.save_objects({'id':wsid,'objects':[{'name':params['ortholog_feature_set'],
                                                                    'data':ortholog_set,
                                                                    'type':'KBaseCollections.FeatureSet'}]})[0]
-        
+
         # reference of saved featureset
         saved_featureset = "{}/{}/{}".format(save_result[6],save_result[0],save_result[4])
-        
-        html_string="<html><head><title>KBase Phytozome Ortholog Mapping Report</title></head><body>"
-        html_string+="<p>The app has finished running and it found "
-        html_string+=str(len(found_orthologs))+" Arabidopsis orthologs</p></body></html>"
 
+        # HTML Folder Path
         uuid_string = str(uuid.uuid4())
-        report_params = { 'objects_created' : [{"ref":saved_featureset,"description":"bollocks"}],
+        html_file_path=os.path.join(self.shared_folder,uuid_string)
+        os.mkdir(html_file_path)
+
+        # Generate table
+        table_generator = GenerateTable()
+        html_table_string = table_generator.generate_table(ortholog_table_dict)
+
+        # Save table
+        # Read in template html
+        with open(os.path.join('/kb/module/data',
+                               'app_report',
+                               'report_table_template.html')) as report_template_file:
+            report_template_string = report_template_file.read()
+
+        # Generate and Insert html title
+        # This needs to be done because it affects the name of the CSV download
+        title_string = "Orthology-Mapping-Report"
+        report_template_string = report_template_string.replace('*TITLE*', title_string)
+
+        # Insert table into template
+        job_report_html = report_template_string.replace('*TABLES*', html_table_string)
+
+        # Save table
+        html_filename = "table.html"
+        with open(os.path.join(html_file_path,html_filename),'w') as html_file:
+            html_file.write(job_report_html)
+
+#        html_string="<html><head><title>KBase Phytozome Ortholog Mapping Report</title></head><body>"
+#        html_string+="<p>The app has finished running and it found "
+#        html_string+=str(len(found_orthologs))+" Arabidopsis orthologs</p></body></html>"
+
+        report_params = { 'objects_created' : [{"ref":saved_featureset,"description":"Saved FeatureSet of orthologs"}],
 #                          'file_links' : output_files,
 #                          'html_links' : [html_folder],
 #                          'direct_html_link_index' : 0, #Use to refer to index of 'html_links'
-                          'direct_html' : html_string, # Can't embed images
+                          'direct_html' : job_report_html, # Can't embed images
                           'workspace_name' : params['input_ws'],
                           'report_object_name' : 'phytozome_ortholog_mapping_' + uuid_string }
         kbase_report_client = KBaseReport(self.callback_url, token=self.token)
