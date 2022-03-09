@@ -11,7 +11,7 @@ module phytozome_ortholog_mapping {
     typedef structure {
 	float threshold;
 	string input_ws;
-	string input_genome;
+	string input_features;
 	string ortholog_feature_set;
     } MapPhytozomeOrthologsParams;
 

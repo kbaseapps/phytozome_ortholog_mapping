@@ -24,11 +24,11 @@ suggestions:
 # Configure the display and description of parameters
 #
 parameters :
-    input_genome :
+    input_features :
         ui-name : |
-            Genome
+            Genome or FeatureSet
         short-hint : |
-            Select the Genome to query
+            Select the Genome or FeatureSet to query
 
     ortholog_feature_set :
         ui-name : |

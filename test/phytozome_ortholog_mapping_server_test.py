@@ -11,6 +11,7 @@ from phytozome_ortholog_mapping.authclient import KBaseAuth as _KBaseAuth
 
 from installed_clients.WorkspaceClient import Workspace
 from installed_clients.GenomeFileUtilClient import GenomeFileUtil
+from installed_clients.DataFileUtilClient import DataFileUtil
 
 class phytozome_ortholog_mappingTest(unittest.TestCase):
 
@@ -47,7 +48,9 @@ class phytozome_ortholog_mappingTest(unittest.TestCase):
         cls.wsName = "test_phytozome_ortholog_mapping_" + str(suffix)
         ret = cls.wsClient.create_workspace({'workspace': cls.wsName})  # noqa
         cls.gfu = GenomeFileUtil(cls.callback_url)
+        cls.dfu = DataFileUtil(cls.callback_url)
         cls.genome = "Test_Genome"
+        cls.feature_set = "Test_Feature_Set"
         cls.prepare_data()
 
     @classmethod
@@ -80,8 +83,23 @@ class phytozome_ortholog_mappingTest(unittest.TestCase):
 
         result = cls.gfu.fasta_gff_to_genome(input_params)
 
+    def loadFakeFeatureSet(cls):
+        
+        feature_list = ["Bradi1g19650.1","Bradi4g08567.1","Bradi5g26017.1",
+                        "Bradi1g08917.1","Bradi1g48264.1","Bradi3g43345.2",
+                        "Bradi3g33740.1","Bradi3g27912.3","Bradi3g34450.1","Bradi2g28007.1"]
+
+        feature_set_dict = {'elements':{}}
+        for feature in feature_list:
+            feature_set_dict['elements'][feature]=["Phytozome_Genomes/Bdistachyon_v3.1"]
+
+        wsid = cls.dfu.ws_name_to_id(cls.wsName)
+        save_result = cls.dfu.save_objects({'id':wsid,'objects':[{'name':cls.feature_set,
+                                                                  'data':feature_set_dict,
+                                                                  'type':'KBaseCollections.FeatureSet'}]})[0]
+
     # NOTE: According to Python unittest naming rules test method names should start from 'test'. # noqa
-    def test_your_method(self):
+    def test_map_phytozome_orthologs_from_genome(self):
         # Prepare test objects in workspace if needed using
         # self.getWsClient().save_objects({'workspace': self.getWsName(),
         #                                  'objects': []})
@@ -95,5 +113,23 @@ class phytozome_ortholog_mappingTest(unittest.TestCase):
         # Check returned data with
         # self.assertEqual(ret[...], ...) or other unittest methods
         ret = self.serviceImpl.map_phytozome_orthologs(self.ctx, {'input_ws': self.wsName,
-                                                                  'input_genome': self.genome,
-                                                                  'ortholog_feature_set': 'orthologous_features'})
+                                                                  'input_features': self.genome,
+                                                                  'ortholog_feature_set': 'orthologous_from_genome'})
+
+    def test_map_phytozome_orthologs_from_feature_set(self):
+        # Prepare test objects in workspace if needed using
+        # self.getWsClient().save_objects({'workspace': self.getWsName(),
+        #                                  'objects': []})
+
+        self.loadFakeFeatureSet()
+
+        #
+        # Run your method by
+        # ret = self.getImpl().your_method(self.getContext(), parameters...)
+        #
+        # Check returned data with
+        # self.assertEqual(ret[...], ...) or other unittest methods
+        ret = self.serviceImpl.map_phytozome_orthologs(self.ctx, {'input_ws': self.wsName,
+                                                                  'input_features': self.feature_set,
+                                                                  'ortholog_feature_set': 'orthologous_from_feature_set'})
+
