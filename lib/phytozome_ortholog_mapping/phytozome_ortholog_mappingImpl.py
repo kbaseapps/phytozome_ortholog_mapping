@@ -93,12 +93,12 @@ class phytozome_ortholog_mapping:
             print("Query Features in "+object_type+": ",str(len(feature_object['data']['mrnas'])))
 
             for mrna in feature_object['data']['mrnas']:
+                if(mrna['id'] not in ortholog_table_dict):
+                    ortholog_table_dict[mrna['id']]=dict()
                 if(mrna['id'] in ortholog_map):
                     for ortholog in ortholog_map[mrna['id']].keys():
                         if(ortholog not in found_orthologs):
                             found_orthologs.append(ortholog)
-                        if(mrna['id'] not in ortholog_table_dict):
-                            ortholog_table_dict[mrna['id']]=dict()
                         if(ortholog not in ortholog_table_dict[mrna['id']]):
                             ortholog_table_dict[mrna['id']][ortholog]=ortholog_map[mrna['id']][ortholog]
 
@@ -107,12 +107,12 @@ class phytozome_ortholog_mapping:
 
             genome_obj_dict = dict()
             for query_ftr in feature_object['data']['elements']:
+                if(query_ftr not in ortholog_table_dict):
+                    ortholog_table_dict[query_ftr]=dict()
                 if(query_ftr in ortholog_map):
                     for ortholog in ortholog_map[query_ftr].keys():
                         if(ortholog not in found_orthologs):
                             found_orthologs.append(ortholog)
-                        if(query_ftr not in ortholog_table_dict):
-                            ortholog_table_dict[query_ftr]=dict()
                         if(ortholog not in ortholog_table_dict[query_ftr]):
                             ortholog_table_dict[query_ftr][ortholog]=ortholog_map[query_ftr][ortholog]
                 else:
@@ -134,17 +134,33 @@ class phytozome_ortholog_mapping:
                                     for ortholog in ortholog_map[genome_mrna].keys():
                                         if(ortholog not in found_orthologs):
                                             found_orthologs.append(ortholog)
-                                        if(query_ftr not in ortholog_table_dict):
-                                            ortholog_table_dict[query_ftr]=dict()
                                         if(ortholog not in ortholog_table_dict[query_ftr]):
                                             ortholog_table_dict[query_ftr][ortholog]=ortholog_map[query_ftr][ortholog]
 
         ortholog_set = {'elements' : {}}
-
         for ortholog in found_orthologs:
             ortholog_set['elements'][ortholog]=["Phytozome_Genomes/Athaliana_TAIR10"]
 
-        print("Found: ",len(found_orthologs))
+        total = len(ortholog_table_dict)
+        number_hits = 0
+        number_orthologs = 0
+        number_one2one = 0
+        number_one2many = 0
+        for entry in ortholog_table_dict:
+            if(len(ortholog_table_dict[entry])==1):
+                number_hits+=1
+                number_orthologs+=1
+                number_one2one+=1
+            if(len(ortholog_table_dict[entry])>1):
+                number_hits+=1
+                number_orthologs+=len(ortholog_table_dict[entry])
+                number_one2many+=1
+            if(len(ortholog_table_dict[entry])==0):
+                pass
+
+        html_report_string = "<p>For "+str(total)+" features, "+str(number_hits)+" mapped to "+str(number_orthologs)+" orthologs.</br>"
+        html_report_string+= "Of these "+str(number_hits)+" features, "+str(number_one2one)+" mapped to one orthologs and "
+        html_report_string+=str(number_one2many)+" mapped to more than one orthologs.</p>"
 
         wsid = self.dfu.ws_name_to_id(params['input_ws'])
         save_result = self.dfu.save_objects({'id':wsid,'objects':[{'name':params['ortholog_feature_set'],
@@ -174,6 +190,9 @@ class phytozome_ortholog_mapping:
         # This needs to be done because it affects the name of the CSV download
         title_string = "Orthology-Mapping-Report"
         report_template_string = report_template_string.replace('*TITLE*', title_string)
+
+        #Insert header for table
+        report_template_string = report_template_string.replace('*HEADER*', html_report_string)
 
         # Insert table into template
         job_report_html = report_template_string.replace('*TABLES*', html_table_string)
